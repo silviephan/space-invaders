@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Geo&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
+
+body {
+  background-color: black;
+  color: white;
+  font-family: raleway, sans-serif;
+  margin: 0;
+}
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.page header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  font-family: 'Geo', sans-serif;
+  font-size: 1.5rem;
+  text-align: center;
+  color: #ebdf64;
+  padding: 2rem;
+  letter-spacing: 0.5rem;
+}
+
+h1 {
+  background: url('../res/stripe.png') repeat-y;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  -webkit-animation: trans 40s linear infinite;
+  animation: trans 40s linear infinite;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+@keyframes trans {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+section {
+  margin: 0 auto;
+  letter-spacing: 0.2rem;
+  height: 1rem;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 16px;
+  justify-content: center;
+  padding: 5px;
+  color: #db55dd;
+}
+
+section > span {
+  font-size: 16px;
+  font-family: 'Press Start 2P', cursive;
+  color: white;
+}
+
+.page main {
+  display: flex;
+  flex-grow: 1;
+  padding: 1rem;
+}
+
+.page footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 70px;
+  font-size: 10px;
+  color: white;
+  letter-spacing: 0.1rem;
+  text-align: center;
+  color: white;
+}
+
+#container {
+  color: white;
+}
+
+main {
+  position: relative;
+  text-align: center;
+}
+
+.space {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+}
+
+.game {
+  height: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 1;
+  display: block;
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  border: 1px solid #ebdf64;
+}
+
+@media screen and (max-width: 600px) {
+  .page header {
+    font-size: 12px;
+    padding: 1rem;
+    height: 60px;
+  }
+
+  .space {
+    width: 100vw;
+  }
+  .game {
+    width: 100vw;
+  }
+
+  .page footer {
+    font-size: 7px;
+    height: 30px;
+  }
+}
