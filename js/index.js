@@ -488,7 +488,7 @@ addEventListener('resize', function () {
   gameCanvas.height = 775;
 });
 
-let currentPage = 1;
+let currentPage = 0;
 let req = new XMLHttpRequest();
 
 const pages = {
