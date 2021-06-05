@@ -11,8 +11,10 @@ const GAME_PADDING = 6;
 const spaceCanvas = document.querySelector('.space');
 const spaceCtx = spaceCanvas.getContext('2d');
 
-spaceCanvas.width = innerWidth - 35;
-spaceCanvas.height = innerHeight - 480;
+const header = document.querySelector('header');
+
+spaceCanvas.width = innerWidth;
+spaceCanvas.height = innerHeight - header.offsetHeight;
 
 const SPACE_WIDTH = spaceCanvas.offsetWidth;
 const SPACE_HEIGHT = spaceCanvas.offsetHeight;
@@ -22,17 +24,7 @@ const gameCanvas = document.querySelector('.game');
 const gameCtx = gameCanvas.getContext('2d');
 
 const scoreEl = document.querySelector('#score');
-
-if (innerWidth < 600 || innerHeight < 775) {
-  gameCanvas.width = 300;
-  gameCanvas.height = 387;
-} else {
-  gameCanvas.width = 600;
-  gameCanvas.height = 775;
-}
-
-const GAME_WIDTH = gameCanvas.offsetWidth;
-const GAME_HEIGHT = gameCanvas.offsetHeight;
+const elemBtnNewGame = document.querySelector('.start-btn');
 
 // Game state
 let animationId;
@@ -42,36 +34,48 @@ let dir = 1;
 let enemyFrameInterval = 0;
 let enemyMoveInterval = 0;
 let score = 0;
+let player;
 let lasers = [];
 let projectiles = [];
 let enemies = [];
 let ufos = [];
 let ufoTimer = 0;
+let startGame = false;
+let gameWidth = 0;
+let gameHeight = 0;
+let rightEdge;
 
-class State {
-  constructor(initialTodos, initialFilter) {
-    this._todos = initialTodos;
-    this._filter = initialFilter;
+// Player ship init
+const shipImage = new Image();
+shipImage.src = './res/player-canon.png';
+
+const redAlienImage = new Image();
+redAlienImage.src = './res/red-alien.png';
+const greenAlienImage = new Image();
+greenAlienImage.src = './res/green-alien.png';
+const yellowAlienImage = new Image();
+yellowAlienImage.src = './res/yellow-alien.png';
+const ufoImage = new Image();
+ufoImage.src = './res/ufo.png';
+
+const rows = [
+  [redAlienImage, 30],
+  [greenAlienImage, 20],
+  [greenAlienImage, 20],
+  [yellowAlienImage, 10],
+  [yellowAlienImage, 10],
+];
+
+function setUp() {
+  if (window.innerWidth < 600 || window.innerHeight < 775) {
+    gameCanvas.width = 300;
+    gameCanvas.height = 387;
+  } else {
+    gameCanvas.width = 600;
+    gameCanvas.height = 775;
   }
-  addTodo(todo) {
-    this._todos.push(todo);
-  }
-  setFilter(filter) {
-    this._filter = filter;
-  }
-  getTodos() {
-    return this._todos.filter(
-      function (todo) {
-        if (this._filter === 'all') {
-          return true;
-        } else if (this._filter === 'completed') {
-          return todo.completed === true;
-        } else if (this._filter === 'active') {
-          return todo.completed === false;
-        }
-      }.bind(this)
-    );
-  }
+  gameWidth = gameCanvas.offsetWidth;
+  gameHeight = gameCanvas.offsetHeight;
 }
 
 // var state = new State(initialState.todos, initialState.filter);
@@ -257,33 +261,12 @@ function drawStar(star, dt, t) {
   spaceCtx.fill();
 }
 
-// Player ship init
-const shipImage = new Image();
-shipImage.src = './res/player-canon.png';
-
-const redAlienImage = new Image();
-redAlienImage.src = './res/red-alien.png';
-const greenAlienImage = new Image();
-greenAlienImage.src = './res/green-alien.png';
-const yellowAlienImage = new Image();
-yellowAlienImage.src = './res/yellow-alien.png';
-const ufoImage = new Image();
-ufoImage.src = './res/ufo.png';
-
-const SHIP_Y = GAME_HEIGHT - 100;
-const GAME_CENTER = GAME_WIDTH / 2 - shipImage.width / 2;
-const GAME_RIGHT_EDGE = GAME_WIDTH - GAME_PADDING - shipImage.width;
-
-const player = new Player(GAME_CENTER, SHIP_Y, 37, 21, shipImage);
-
-const rows = [
-  [redAlienImage, 30],
-  [greenAlienImage, 20],
-  [greenAlienImage, 20],
-  [yellowAlienImage, 10],
-  [yellowAlienImage, 10],
-];
-
+function initPlayer() {
+  const SHIP_Y = gameHeight - 100;
+  const GAME_CENTER = gameWidth / 2 - shipImage.width / 2;
+  player = new Player(GAME_CENTER, SHIP_Y, 37, 21, shipImage);
+  rightEdge = gameWidth - GAME_PADDING - shipImage.width;
+}
 function spawnEnemies() {
   for (let i = 0; i < rows.length; i++) {
     for (let j = 0; j < 10; j++) {
@@ -291,10 +274,6 @@ function spawnEnemies() {
       enemies.push(new Alien(40 + j * 40, 120 + i * 50, redAlienImage.width / 3, redAlienImage.height, alien[1], alien[0], 0, 0));
     }
   }
-}
-
-function randomColour() {
-  return Math.random() >= 0.5 ? '#EBDF64' : '#42E9F4';
 }
 
 function keyMovements(e) {
@@ -306,7 +285,7 @@ function keyMovements(e) {
       }
       break;
     case 'ArrowRight':
-      if (player.x <= GAME_RIGHT_EDGE) {
+      if (player.x <= rightEdge) {
         player.moveRight();
       }
       break;
@@ -320,10 +299,18 @@ function keyMovements(e) {
   }
 }
 
-window.addEventListener('keydown', keyMovements);
-
 function AABBIntersect(ax, ay, aw, ah, bx, by, bw, bh) {
   return ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah;
+}
+
+function renderStars(timestamp, dt) {
+  stars.forEach((star) => {
+    if (timestamp <= 400) {
+      drawStar(star, dt + 1000);
+    } else {
+      drawStar(star, dt);
+    }
+  });
 }
 
 // Main animation function
@@ -336,145 +323,149 @@ function animate(timestamp) {
   const dt = timestamp - t;
   t = timestamp;
 
-  //Enemy rendering
-  let _max = 0;
-  let _min = GAME_WIDTH;
-
-  enemyFrameInterval++;
-  enemyMoveInterval++;
-
   spaceCtx.clearRect(0, 0, SPACE_WIDTH, SPACE_HEIGHT);
-  gameCtx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-  //Star rendering
-  stars.forEach((star) => {
-    if (timestamp <= 400) {
-      drawStar(star, dt + 1000);
-    } else {
-      drawStar(star, dt);
-    }
-  });
 
   //Player rendering
-  player.draw();
+  if (!startGame) {
+    renderStars(timestamp, dt);
+  } else {
+    gameCtx.clearRect(0, 0, gameWidth, gameHeight);
+    //Enemy rendering
+    let _max = 0;
+    let _min = gameWidth;
 
-  //Laser rendering
-  lasers.forEach((laser) => {
-    laser.update();
-  });
+    enemyFrameInterval++;
+    enemyMoveInterval++;
 
-  projectiles.forEach((projectile, projectileIndex) => {
-    if (lasers.length !== 0) {
-      if (projectile.collisionDetectionTo(lasers[0])) {
-        setTimeout(() => {
-          new Audio('./res/sfx/laser-x-projectile-sfx.mp3').play();
-          lasers = [];
-          projectiles.splice(projectileIndex, 1);
-        }, 0);
-      } else if (projectile.y >= GAME_HEIGHT) {
-        projectiles.splice(projectileIndex, 1);
-      }
-    }
-    if (projectile.collisionDetectionTo(player)) {
-      gameOver();
-    }
-    projectile.update();
-  });
+    renderStars(timestamp, dt);
 
-  enemies.forEach((enemy, index) => {
-    // Compute enemies' distance to the player
-    const distFromPlayer = Math.hypot(player.y - enemy.y);
+    player.draw();
+    //Laser rendering
+    lasers.forEach((laser) => {
+      laser.update();
+    });
 
-    // Game over
-    if (distFromPlayer - enemy.height / 2 - player.height / 2 < 1) {
-      gameOver();
-    }
-
-    // Reset timers
-    if (enemyFrameInterval > SPRITE_ANIMATION_INTERVAL) {
-      enemyFrameInterval = 0;
-    } else if (enemyMoveInterval > ENEMY_MOVE_INTERVAL) {
-      enemyMoveInterval = 0;
-    }
-
-    // Enemy sprite animation
-    enemy.change(enemyFrameInterval);
-
-    setTimeout(() => {
-      // Collision detection between the enemy and the player's laser
-      lasers.forEach((laser) => {
-        if (laser.collisionDetectionTo(enemy)) {
-          lasers = [];
-
-          // Score update
-          score += enemy.value;
-          scoreEl.innerHTML = score;
-
-          // Dying animation before removal
-          enemy.die();
+    projectiles.forEach((projectile, projectileIndex) => {
+      if (lasers.length !== 0) {
+        if (projectile.collisionDetectionTo(lasers[0])) {
           setTimeout(() => {
-            enemies.splice(index, 1);
-          }, 200);
+            new Audio('./res/sfx/laser-x-projectile-sfx.mp3').play();
+            lasers = [];
+            projectiles.splice(projectileIndex, 1);
+          }, 0);
+        } else if (projectile.y >= gameHeight) {
+          projectiles.splice(projectileIndex, 1);
         }
-      });
-    }, 0);
+      }
+      if (projectile.collisionDetectionTo(player)) {
+        gameOver();
+      }
+      projectile.update();
+    });
+
+    enemies.forEach((enemy, index) => {
+      // Compute enemies' distance to the player
+      const distFromPlayer = Math.hypot(player.y - enemy.y);
+
+      // Game over
+      if (distFromPlayer - enemy.height / 2 - player.height / 2 < 1) {
+        gameOver();
+      }
+
+      // Reset timers
+      if (enemyFrameInterval > SPRITE_ANIMATION_INTERVAL) {
+        enemyFrameInterval = 0;
+      } else if (enemyMoveInterval > ENEMY_MOVE_INTERVAL) {
+        enemyMoveInterval = 0;
+      }
+
+      // Enemy sprite animation
+      enemy.change(enemyFrameInterval);
+
+      setTimeout(() => {
+        // Collision detection between the enemy and the player's laser
+        lasers.forEach((laser) => {
+          if (laser.collisionDetectionTo(enemy)) {
+            lasers = [];
+
+            // Score update
+            score += enemy.value;
+            scoreEl.innerHTML = score;
+
+            // Dying animation before removal
+            enemy.die();
+            setTimeout(() => {
+              enemies.splice(index, 1);
+            }, 200);
+          }
+        });
+      }, 0);
+
+      //Enemy group movement
+      enemy.moveHorizontally(enemyMoveInterval);
+      _max = Math.max(_max, enemy.x + enemy.width);
+      _min = Math.min(_min, enemy.x);
+    });
 
     //Enemy group movement
-    enemy.moveHorizontally(enemyMoveInterval);
-    _max = Math.max(_max, enemy.x + enemy.width);
-    _min = Math.min(_min, enemy.x);
-  });
-
-  //Enemy group movement
-  if (_max >= GAME_WIDTH - 30 || _min < 30) {
-    dir *= -1;
-    enemies.forEach((enemy) => {
-      enemy.change(enemyFrameInterval);
-      enemy.moveVertically(enemyMoveInterval);
-    });
-  }
-
-  //Generate projectiles from fron line enemies
-  if (Math.random() < 0.02 && enemies.length > 0) {
-    let num = Math.round(Math.random() * (enemies.length - 1));
-    let a = enemies[num];
-    enemies.forEach((enemy) => {
-      var b = enemy;
-      if (AABBIntersect(a.x, a.y, a.width, 100, b.x, b.y, b.width, b.height)) {
-        a = b;
-      }
-    });
-    // create and append new bullet
-    projectiles.push(new Projectile(a.x + a.width * 0.5, a.y + a.height, 2, false, 8, 8));
-  }
-
-  if (ufoTimer === 14) {
-    ufos.push(new Alien(GAME_WIDTH, 70, ufoImage.width, ufoImage.height, 300, ufoImage, 0, 0));
-    ufoTimer = 0;
-  }
-
-  ufos.forEach((ufo) => {
-    if (ufo.x + ufo.width < 0) {
-      ufos = [];
+    if (_max >= gameWidth - 30 || _min < 30) {
+      dir *= -1;
+      enemies.forEach((enemy) => {
+        enemy.change(enemyFrameInterval);
+        enemy.moveVertically(enemyMoveInterval);
+      });
     }
-    setTimeout(() => {
-      // Collision detection between the enemy and the player's laser
-      lasers.forEach((laser) => {
-        if (laser.collisionDetectionTo(ufo)) {
-          lasers = [];
 
-          // Score update
-          score += ufo.value;
-          scoreEl.innerHTML = score;
-
-          // Dying animation before removal
-          new Audio('./res/sfx/ufo-sfx.mp3').play();
-          ufos = [];
+    //Generate projectiles from fron line enemies
+    if (Math.random() < 0.02 && enemies.length > 0) {
+      let num = Math.round(Math.random() * (enemies.length - 1));
+      let a = enemies[num];
+      enemies.forEach((enemy) => {
+        var b = enemy;
+        if (AABBIntersect(a.x, a.y, a.width, 100, b.x, b.y, b.width, b.height)) {
+          a = b;
         }
       });
-    }, 0);
-    ufo.ufoMove();
-  });
+      // create and append new bullet
+      projectiles.push(new Projectile(a.x + a.width * 0.5, a.y + a.height, 2, false, 8, 8));
+    }
+
+    if (ufoTimer === 14) {
+      ufos.push(new Alien(gameWidth, 70, ufoImage.width, ufoImage.height, 300, ufoImage, 0, 0));
+      ufoTimer = 0;
+    }
+
+    ufos.forEach((ufo) => {
+      if (ufo.x + ufo.width < 0) {
+        ufos = [];
+      }
+      setTimeout(() => {
+        // Collision detection between the enemy and the player's laser
+        lasers.forEach((laser) => {
+          if (laser.collisionDetectionTo(ufo)) {
+            lasers = [];
+
+            // Score update
+            score += ufo.value;
+            scoreEl.innerHTML = score;
+
+            // Dying animation before removal
+            new Audio('./res/sfx/ufo-sfx.mp3').play();
+            ufos = [];
+          }
+        });
+      }, 0);
+      ufo.ufoMove();
+    });
+  }
+}
+
+function gameStart() {
+  console.log('hello');
+  setUp();
+  initPlayer();
+  spawnEnemies();
+  requestAnimationFrame(animate);
 }
 
 function gameOver() {
@@ -482,8 +473,10 @@ function gameOver() {
   cancelAnimationFrame(animationId);
 }
 
-window.addEventListener('load', () => {
-  spawnEnemies();
+// Event listeners
+addEventListener('keydown', keyMovements);
+
+addEventListener('load', () => {
   placeStars();
   requestAnimationFrame(animate);
 });
@@ -493,4 +486,65 @@ addEventListener('resize', function () {
   spaceCanvas.height = innerHeight - 480;
   gameCanvas.width = 600;
   gameCanvas.height = 775;
+});
+
+let currentPage = 1;
+let req = new XMLHttpRequest();
+
+const pages = {
+  1: '.menu-panel',
+  2: '.game-panel',
+  3: '.gameover-panel',
+};
+
+// Game panels
+let ElprevPage, ELcurrPage;
+
+window.onload = function () {
+  // Check if this is a reload, in which case you are already on a page.
+  var urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('page')) {
+    var slideParam = Number(urlParams.get('page'));
+    if (!isNaN(slideParam)) {
+      goToPage(slideParam);
+    }
+  }
+};
+
+// Fires when the user goes back or forward in the history.
+window.onpopstate = function (e) {
+  if (e.state != null) {
+    goToPage(e.state);
+  }
+};
+
+// Click the Next button.
+function nextPage() {
+  var page;
+  if (currentPage == 4) {
+    page = 1;
+  } else {
+    page = currentPage + 1;
+  }
+
+  history.pushState(page, null, '?page=' + page);
+  goToPage(page);
+  return false;
+}
+
+// Start a request for the page you want to show.
+function goToPage(page) {
+  ElprevPage = document.querySelector(pages[currentPage]);
+  ELcurrPage = document.querySelector(pages[page]);
+
+  ElprevPage.classList.add('invisible');
+  ELcurrPage.classList.remove('invisible');
+  currentPage = page;
+  if (currentPage === 2) {
+    gameStart();
+  }
+}
+
+elemBtnNewGame.addEventListener('click', (e) => {
+  nextPage();
 });

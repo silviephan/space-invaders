@@ -4,9 +4,14 @@
 body {
   background-color: black;
   color: white;
-  font-family: raleway, sans-serif;
+  font-family: 'Press Start 2P', cursive;
   margin: 0;
 }
+
+.invisible {
+  display: none !important;
+}
+
 .page {
   display: flex;
   flex-direction: column;
@@ -50,18 +55,14 @@ h1 {
 
 section {
   margin: 0 auto;
-  letter-spacing: 0.2rem;
-  height: 1rem;
-  font-family: 'Press Start 2P', cursive;
-  font-size: 16px;
-  justify-content: center;
-  padding: 5px;
-  color: #db55dd;
 }
 
-section > span {
+.game-panel > span {
   font-size: 16px;
   font-family: 'Press Start 2P', cursive;
+  color: #db55dd;
+}
+span #score {
   color: white;
 }
 
@@ -77,6 +78,7 @@ section > span {
   justify-content: center;
   height: 70px;
   font-size: 10px;
+  font-family: raleway, sans-serif;
   color: white;
   letter-spacing: 0.1rem;
   text-align: center;
@@ -93,15 +95,99 @@ main {
 }
 
 .space {
+  margin: 0 auto;
+  touch-action: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: -1;
+}
+
+.controls {
+  fill: #42e9f4;
+}
+
+.menu-panel > ul {
+  list-style-type: none;
+}
+
+.menu-panel > ul li {
+  margin: 2rem;
+  display: flex;
+  align-items: center;
+}
+
+.start-btn {
+  background-color: #db55dd;
+  color: white;
+}
+
+.start-btn:link,
+.start-btn:visited {
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 15px 40px;
+  display: inline-block;
+  transition: all 0.2s;
+  position: absolute;
+}
+
+.start-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 0 rgba(219, 85, 221, 0.5);
+}
+
+.start-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 rgba(219, 85, 221, 0.5);
+}
+
+.start-btn::after {
+  content: '';
+  display: inline-block;
   height: 100%;
   width: 100%;
   position: absolute;
-  left: 0;
   top: 0;
-  z-index: 0;
+  left: 0;
+  z-index: -1;
+  transition: all 0.4s;
 }
 
-.game {
+.start-btn::after {
+  background-color: #db55dd;
+}
+
+.start-btn:hover::after {
+  transform: scaleX(1.4) scaleY(1.6);
+  opacity: 0;
+}
+
+.btn-animated {
+  animation: moveInBottom 5s ease-out;
+  animation-fill-mode: backwards;
+}
+
+@keyframes moveInBottom {
+  0% {
+    opacity: 0;
+    transform: translateY(900px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0px);
+  }
+}
+
+.menu-panel > h2 {
+  color: #42e9f4;
+  font-size: 33px;
+  letter-spacing: 0.5rem;
+}
+
+.game-panel > .game {
   height: 100%;
   position: absolute;
   left: 0;
