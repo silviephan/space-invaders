@@ -8,10 +8,6 @@ body {
   margin: 0;
 }
 
-.invisible {
-  display: none !important;
-}
-
 .page {
   display: flex;
   flex-direction: column;
@@ -220,4 +216,8 @@ main {
     font-size: 7px;
     height: 30px;
   }
+}
+
+.invisible {
+  display: none !important;
 }
