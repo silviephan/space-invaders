@@ -1,5 +1,8 @@
 # space-invaders
 Semestrální práce na předmět KAJ
+Single page aplikace na klasickou arkádovou hru Space Invaders.
+Dostupná i na adrese: https://silviephan.github.io/space-invaders/
+
 
 ### Použité technologie
 -	Localstorage API - ukládání výsledků her
