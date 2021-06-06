@@ -1,4 +1,4 @@
-// global config
+// Global config
 const STAR_SPEED_MULTI = 0.025;
 const STAR_NUM = 240;
 const PLAYER_SPEED = 8;
@@ -6,25 +6,6 @@ const SPRITE_ANIMATION_INTERVAL = 10;
 const ENEMY_MOVE_INTERVAL = 30;
 const ENEMY_SPEED = 15;
 const GAME_PADDING = 6;
-
-// Space init config
-const spaceCanvas = document.querySelector('.space');
-const spaceCtx = spaceCanvas.getContext('2d');
-
-const header = document.querySelector('header');
-
-spaceCanvas.width = innerWidth;
-spaceCanvas.height = innerHeight - header.offsetHeight;
-
-const SPACE_WIDTH = spaceCanvas.offsetWidth;
-const SPACE_HEIGHT = spaceCanvas.offsetHeight;
-
-// Game init configWS
-const gameCanvas = document.querySelector('.game');
-const gameCtx = gameCanvas.getContext('2d');
-
-const scoreEl = document.querySelector('#score');
-const elemBtnNewGame = document.querySelector('.start-btn');
 
 // Game state
 let animationId;
@@ -35,36 +16,46 @@ let enemyFrameInterval = 0;
 let enemyMoveInterval = 0;
 let score = 0;
 let player;
-let lasers = [];
-let projectiles = [];
+let projectilesFromPlayer = [];
+let projectilesFromEnemies = [];
 let enemies = [];
 let ufos = [];
 let ufoTimer = 0;
-let startGame = false;
+let gameStarted = false;
 let gameWidth = 0;
 let gameHeight = 0;
 let rightEdge;
+let soundMuted = false;
 
-// Player ship init
-const shipImage = new Image();
-shipImage.src = './res/player-canon.png';
+function resetGame() {
+  t = null;
+  dir = 1;
+  enemyFrameInterval = 0;
+  enemyMoveInterval = 0;
+  score = 0;
+  player;
+  projectilesFromPlayer = [];
+  projectilesFromEnemies = [];
+  enemies = [];
+  ufos = [];
+  ufoTimer = 0;
+  rightEdge;
+}
 
-const redAlienImage = new Image();
-redAlienImage.src = './res/red-alien.png';
-const greenAlienImage = new Image();
-greenAlienImage.src = './res/green-alien.png';
-const yellowAlienImage = new Image();
-yellowAlienImage.src = './res/yellow-alien.png';
-const ufoImage = new Image();
-ufoImage.src = './res/ufo.png';
+// Space canvas background init
+const spaceCanvas = document.querySelector('.space');
+const spaceCtx = spaceCanvas.getContext('2d');
+const header = document.querySelector('header');
 
-const rows = [
-  [redAlienImage, 30],
-  [greenAlienImage, 20],
-  [greenAlienImage, 20],
-  [yellowAlienImage, 10],
-  [yellowAlienImage, 10],
-];
+// Set space size based on view heigh and window
+spaceCanvas.width = innerWidth;
+spaceCanvas.height = innerHeight - header.offsetHeight;
+const SPACE_WIDTH = spaceCanvas.offsetWidth;
+const SPACE_HEIGHT = spaceCanvas.offsetHeight;
+
+// Game canvas init
+const gameCanvas = document.querySelector('.game');
+const gameCtx = gameCanvas.getContext('2d');
 
 function setUp() {
   if (window.innerWidth < 600 || window.innerHeight < 775) {
@@ -78,8 +69,39 @@ function setUp() {
   gameHeight = gameCanvas.offsetHeight;
 }
 
-// var state = new State(initialState.todos, initialState.filter);
+// Page panels
+const elMenu = document.querySelector('.menu-panel');
+const elGame = document.querySelector('.game-panel');
+const elGameOver = document.querySelector('.gameover-panel');
 
+// Score and Start button
+const scoreEl = document.querySelector('#score');
+const elemBtnNewGame = document.querySelector('.start-btn');
+
+// Player sprite init
+const playerImage = new Image();
+playerImage.src = './res/player-canon.png';
+
+// Enemy sprite init
+const redAlienImage = new Image();
+redAlienImage.src = './res/red-alien.png';
+const greenAlienImage = new Image();
+greenAlienImage.src = './res/green-alien.png';
+const yellowAlienImage = new Image();
+yellowAlienImage.src = './res/yellow-alien.png';
+const ufoImage = new Image();
+ufoImage.src = './res/ufo.png';
+
+// Enemie's layouting on the gameplay
+const enemyLayout = [
+  [redAlienImage, 30],
+  [greenAlienImage, 20],
+  [greenAlienImage, 20],
+  [yellowAlienImage, 10],
+  [yellowAlienImage, 10],
+];
+
+// Parent class for all objects in the game
 class GameObject {
   constructor(x, y, width, height) {
     this.x = x;
@@ -102,12 +124,8 @@ class GameObject {
     let aw = (target.width + this.width) * 0.5; // average width
     let ah = (target.height + this.height) * 0.5; // average height
 
-    /* If either distance is greater than the average dimension there is no collision. */
     if (Math.abs(dx) > aw || Math.abs(dy) > ah) return false;
 
-    /* To determine which region of this rectangle the rect's center
-    point is in, we have to account for the scale of the this rectangle.
-    To do that, we divide dx and dy by it's width and height respectively. */
     if (Math.abs(dx / this.w) > Math.abs(dy / this.h)) {
       if (dx < 0) target.x = this.x - target.width;
       else target.x = this.x + this.width;
@@ -155,7 +173,10 @@ class Alien extends GameObject {
   }
 
   die() {
-    new Audio('./res/sfx/dead-enemy-sfx.mp3').play();
+    if (!soundMuted) {
+      new Audio('./res/sfx/dead-enemy-sfx.mp3').play();
+    } else {
+    }
     this.frameX = 2;
     this.draw;
   }
@@ -203,7 +224,7 @@ class Projectile extends GameObject {
   draw() {
     if (this.fromPlayer) {
       if (this.y <= 10) {
-        lasers = [];
+        projectilesFromPlayer = [];
       }
 
       gameCtx.strokeStyle = 'white';
@@ -237,6 +258,40 @@ class Projectile extends GameObject {
   }
 }
 
+// Score storing with localStorage
+class Score {
+  constructor() {
+    this.highscore = JSON.parse(localStorage.getItem('highscore')) || [
+      ['0', 'XXX'],
+      ['0', 'XXX'],
+      ['0', 'XXX'],
+    ];
+    this.elRanking = document.querySelector('#highscore ul');
+  }
+
+  // add new score record
+  addScore(score, name) {
+    this.highscore.push([score, name]);
+    this.highscore.sort((a, b) => b[0] - a[0]);
+    localStorage.setItem('highscore', JSON.stringify(this.highscore));
+  }
+
+  displayRanking() {
+    let table = document.getElementById('rankings');
+    let rank = 0;
+    this.highscore.forEach((score) => {
+      rank += 1;
+      let row = table.insertRow(-1);
+      let rankCell = row.insertCell(0);
+      let scoreCell = row.insertCell(1);
+      let playerCell = row.insertCell(2);
+      rankCell.innerHTML = rank + '. ';
+      scoreCell.innerHTML = score[0];
+      playerCell.innerHTML = score[1];
+    });
+  }
+}
+
 function placeStars() {
   for (let i = 0; i < STAR_NUM; i++) {
     stars[i] = {
@@ -261,22 +316,26 @@ function drawStar(star, dt, t) {
   spaceCtx.fill();
 }
 
-function initPlayer() {
+// Spawn player
+function spawnPlayer() {
   const SHIP_Y = gameHeight - 100;
-  const GAME_CENTER = gameWidth / 2 - shipImage.width / 2;
-  player = new Player(GAME_CENTER, SHIP_Y, 37, 21, shipImage);
-  rightEdge = gameWidth - GAME_PADDING - shipImage.width;
+  const GAME_CENTER = gameWidth / 2 - playerImage.width / 2;
+  player = new Player(GAME_CENTER, SHIP_Y, 37, 21, playerImage);
+  rightEdge = gameWidth - GAME_PADDING - playerImage.width;
 }
+
+// Spawn enemies
 function spawnEnemies() {
-  for (let i = 0; i < rows.length; i++) {
+  for (let i = 0; i < enemyLayout.length; i++) {
     for (let j = 0; j < 10; j++) {
-      let alien = rows[i];
+      let alien = enemyLayout[i];
       enemies.push(new Alien(40 + j * 40, 120 + i * 50, redAlienImage.width / 3, redAlienImage.height, alien[1], alien[0], 0, 0));
     }
   }
 }
 
-function keyMovements(e) {
+// Move player's ship based on key inputs form the keypad
+function playerKeypadMovements(e) {
   const key = e.key;
   switch (key) {
     case 'ArrowLeft':
@@ -290,9 +349,9 @@ function keyMovements(e) {
       }
       break;
     case ' ':
-      if (lasers.length === 0) {
-        lasers.push(new Projectile(player.x + shipImage.width / 2, player.y, 5, true, 2, 8));
-        lasers[0].draw();
+      if (projectilesFromPlayer.length === 0) {
+        projectilesFromPlayer.push(new Projectile(player.x + playerImage.width / 2, player.y, 5, true, 2, 8));
+        projectilesFromPlayer[0].draw();
         ufoTimer += 1;
       }
       break;
@@ -306,7 +365,7 @@ function AABBIntersect(ax, ay, aw, ah, bx, by, bw, bh) {
 function renderStars(timestamp, dt) {
   stars.forEach((star) => {
     if (timestamp <= 400) {
-      drawStar(star, dt + 1000);
+      drawStar(star, dt + 2000);
     } else {
       drawStar(star, dt);
     }
@@ -325,50 +384,81 @@ function animate(timestamp) {
 
   spaceCtx.clearRect(0, 0, SPACE_WIDTH, SPACE_HEIGHT);
 
-  //Player rendering
-  if (!startGame) {
+  // Only render stars if the game hasn't been started yet or had already ended
+  if (!gameStarted) {
     renderStars(timestamp, dt);
   } else {
-    gameCtx.clearRect(0, 0, gameWidth, gameHeight);
-    //Enemy rendering
-    let _max = 0;
-    let _min = gameWidth;
+    // End game when player killed all the enemies and play positive SFX
+    if (enemies.length === 0) {
+      if (!soundMuted) {
+        new Audio('./res/sfx/game-won-sfx.wav').play();
+      } else {
+      }
+      gameOver();
+    }
 
+    // Timers
     enemyFrameInterval++;
     enemyMoveInterval++;
 
+    gameCtx.clearRect(0, 0, gameWidth, gameHeight);
+
+    // Render stars
     renderStars(timestamp, dt);
 
+    // Render player
     player.draw();
-    //Laser rendering
-    lasers.forEach((laser) => {
+
+    // Player projectiles rendering
+    projectilesFromPlayer.forEach((laser) => {
       laser.update();
     });
 
-    projectiles.forEach((projectile, projectileIndex) => {
-      if (lasers.length !== 0) {
-        if (projectile.collisionDetectionTo(lasers[0])) {
+    // Enemy projectiles rendering
+    projectilesFromEnemies.forEach((projectile, projectileIndex) => {
+      // Remove enemy projectile if it collided with player's projectile
+      if (projectilesFromPlayer.length !== 0) {
+        if (projectile.collisionDetectionTo(projectilesFromPlayer[0])) {
           setTimeout(() => {
-            new Audio('./res/sfx/laser-x-projectile-sfx.mp3').play();
-            lasers = [];
-            projectiles.splice(projectileIndex, 1);
+            if (!soundMuted) {
+              new Audio('./res/sfx/laser-x-projectile-sfx.mp3').play();
+            } else {
+            }
+            projectilesFromPlayer = [];
+            projectilesFromEnemies.splice(projectileIndex, 1);
           }, 0);
-        } else if (projectile.y >= gameHeight) {
-          projectiles.splice(projectileIndex, 1);
+        }
+
+        // Remove projectile if it went pass the Game canvas
+        else if (projectile.y >= gameHeight) {
+          projectilesFromEnemies.splice(projectileIndex, 1);
         }
       }
+
+      // End game if player has been hit
       if (projectile.collisionDetectionTo(player)) {
+        if (!soundMuted) {
+          new Audio('./res/sfx/game-over-sfx.wav').play();
+        } else {
+        }
         gameOver();
       }
+
       projectile.update();
     });
 
-    enemies.forEach((enemy, index) => {
-      // Compute enemies' distance to the player
-      const distFromPlayer = Math.hypot(player.y - enemy.y);
+    let _max = 0;
+    let _min = gameWidth;
 
-      // Game over
+    // Enemy rendering
+    enemies.forEach((enemy, index) => {
+      // End game if enemies had reached the player
+      const distFromPlayer = Math.hypot(player.y - enemy.y);
       if (distFromPlayer - enemy.height / 2 - player.height / 2 < 1) {
+        if (!soundMuted) {
+          new Audio('./res/sfx/game-over-sfx.wav').play();
+        } else {
+        }
         gameOver();
       }
 
@@ -382,11 +472,11 @@ function animate(timestamp) {
       // Enemy sprite animation
       enemy.change(enemyFrameInterval);
 
+      // Collision detection between the enemy and the player's laser
       setTimeout(() => {
-        // Collision detection between the enemy and the player's laser
-        lasers.forEach((laser) => {
+        projectilesFromPlayer.forEach((laser) => {
           if (laser.collisionDetectionTo(enemy)) {
-            lasers = [];
+            projectilesFromPlayer = [];
 
             // Score update
             score += enemy.value;
@@ -394,6 +484,7 @@ function animate(timestamp) {
 
             // Dying animation before removal
             enemy.die();
+
             setTimeout(() => {
               enemies.splice(index, 1);
             }, 200);
@@ -401,13 +492,13 @@ function animate(timestamp) {
         });
       }, 0);
 
-      //Enemy group movement
+      // Enemy group movement
       enemy.moveHorizontally(enemyMoveInterval);
       _max = Math.max(_max, enemy.x + enemy.width);
       _min = Math.min(_min, enemy.x);
     });
 
-    //Enemy group movement
+    // Enemy group movement
     if (_max >= gameWidth - 30 || _min < 30) {
       dir *= -1;
       enemies.forEach((enemy) => {
@@ -416,7 +507,7 @@ function animate(timestamp) {
       });
     }
 
-    //Generate projectiles from fron line enemies
+    // Generate projectiles from front line enemies
     if (Math.random() < 0.02 && enemies.length > 0) {
       let num = Math.round(Math.random() * (enemies.length - 1));
       let a = enemies[num];
@@ -426,10 +517,11 @@ function animate(timestamp) {
           a = b;
         }
       });
-      // create and append new bullet
-      projectiles.push(new Projectile(a.x + a.width * 0.5, a.y + a.height, 2, false, 8, 8));
+      // Create and append new bullet
+      projectilesFromEnemies.push(new Projectile(a.x + a.width * 0.5, a.y + a.height, 2, false, 8, 8));
     }
 
+    // Rendering Ufo on specific occasion
     if (ufoTimer === 14) {
       ufos.push(new Alien(gameWidth, 70, ufoImage.width, ufoImage.height, 300, ufoImage, 0, 0));
       ufoTimer = 0;
@@ -441,16 +533,20 @@ function animate(timestamp) {
       }
       setTimeout(() => {
         // Collision detection between the enemy and the player's laser
-        lasers.forEach((laser) => {
+        projectilesFromPlayer.forEach((laser) => {
           if (laser.collisionDetectionTo(ufo)) {
-            lasers = [];
+            projectilesFromPlayer = [];
 
             // Score update
             score += ufo.value;
             scoreEl.innerHTML = score;
 
             // Dying animation before removal
-            new Audio('./res/sfx/ufo-sfx.mp3').play();
+
+            if (!soundMuted) {
+              new Audio('./res/sfx/ufo-sfx.mp3').play();
+            } else {
+            }
             ufos = [];
           }
         });
@@ -460,22 +556,91 @@ function animate(timestamp) {
   }
 }
 
-function gameStart() {
-  console.log('hello');
+// Start game
+function startGame() {
+  window.addEventListener('keydown', playerKeypadMovements);
   setUp();
-  initPlayer();
+  spawnPlayer();
   spawnEnemies();
-  requestAnimationFrame(animate);
 }
 
+const newScore = new Score();
+
+function goToGameOverPanel() {
+  scoreEl.innerHTML = 0;
+  resetGame();
+  window.location.href = '#gameover';
+}
+
+let validName = false;
+
 function gameOver() {
-  window.removeEventListener('keydown', keyMovements);
-  cancelAnimationFrame(animationId);
+  window.removeEventListener('keydown', playerKeypadMovements);
+  gameStarted = false;
+  if (score > 0) {
+    window.cancelAnimationFrame(animationId);
+
+    // Create form elements when the game is over
+    let labelEl = document.createElement('label');
+    labelEl.innerHTML = 'NAME: ';
+
+    let inputEl = document.createElement('input');
+    inputEl.type = 'text';
+    inputEl.classList.add('scorer');
+    inputEl.placeholder = 'Player name';
+    inputEl.autofocus = true;
+
+    let buttonEl = document.createElement('button');
+    buttonEl.innerHTML = 'SUBMIT';
+    buttonEl.classList.add('submit-btn');
+
+    let formEl = document.createElement('form');
+
+    formEl.appendChild(labelEl);
+    formEl.appendChild(inputEl);
+    formEl.appendChild(buttonEl);
+
+    let infoEl = document.createElement('small');
+    infoEl.innerHTML = 'Please fill in your name to place your score in the ranking. Player name has to be 3 to 12 characters long.';
+
+    const divEl = document.querySelector('.score-form');
+    divEl.classList.add('yellow');
+    divEl.appendChild(infoEl);
+    divEl.appendChild(formEl);
+
+    //save high score btn listener
+    const elemBtnSubmit = document.querySelector('.submit-btn');
+    inputEl.addEventListener('blur', checkName(inputEl));
+    inputEl.addEventListener('keyup', checkName(inputEl));
+
+    elemBtnSubmit.addEventListener('click', (e) => {
+      checkName(inputEl);
+      console.log(validName);
+      if (validName) {
+        const name = document.querySelector('.scorer').value;
+        newScore.addScore(score, name);
+        goToGameOverPanel();
+      } else {
+        e.preventDefault();
+      }
+    });
+  } else {
+    goToGameOverPanel();
+  }
+}
+
+// Player name validation
+function checkName(target) {
+  let nameValue = target.value.trim();
+
+  if (nameValue.length >= 3 && nameValue.length <= 12) {
+    validName = true;
+  } else {
+    validName = false;
+  }
 }
 
 // Event listeners
-addEventListener('keydown', keyMovements);
-
 addEventListener('load', () => {
   placeStars();
   requestAnimationFrame(animate);
@@ -488,63 +653,59 @@ addEventListener('resize', function () {
   gameCanvas.height = 775;
 });
 
-let currentPage = 1;
-let req = new XMLHttpRequest();
-
-const pages = {
-  1: '.menu-panel',
-  2: '.game-panel',
-  3: '.gameover-panel',
-};
-
-// Game panels
-let ElprevPage, ELcurrPage;
-
-window.onload = function () {
-  // Check if this is a reload, in which case you are already on a page.
-  var urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has('page')) {
-    var slideParam = Number(urlParams.get('page'));
-    if (!isNaN(slideParam)) {
-      goToPage(slideParam);
-    }
-  }
-};
-
-// Fires when the user goes back or forward in the history.
-window.onpopstate = function (e) {
-  if (e.state != null) {
-    goToPage(e.state);
-  }
-};
-
-// Click the Next button.
-function nextPage() {
-  var page;
-  if (currentPage == 4) {
-    page = 1;
+document.querySelector('.sfx-switch').addEventListener('click', (e) => {
+  if (!soundMuted) {
+    e.target.src = 'res/sfx-muted.png';
+    soundMuted = true;
   } else {
-    page = currentPage + 1;
+    e.target.src = 'res/sfx-unmuted.png';
+    soundMuted = false;
   }
-
-  history.pushState(page, null, '?page=' + page);
-  goToPage(page);
-  return false;
-}
-
-// Start a request for the page you want to show.
-function goToPage(page) {
-  ElprevPage = document.querySelector(pages[currentPage]);
-  ELcurrPage = document.querySelector(pages[page]);
-
-  ElprevPage.classList.add('invisible');
-  ELcurrPage.classList.remove('invisible');
-  currentPage = page;
-  if (currentPage === 2) {
-    gameStart();
-  }
-}
-
-elemBtnNewGame.addEventListener('click', (e) => {
-  nextPage();
 });
+
+// Paging with use of History API
+class Paging {
+  constructor() {
+    this.pages = document.querySelectorAll('section');
+    //first run
+    this.route();
+    window.addEventListener('popstate', (e) => this.route());
+  }
+  route() {
+    const hash = window.location.hash;
+    switch (hash) {
+      case '#main':
+        gameStarted = false;
+        this.changePage(hash);
+        break;
+      case '#gameplay':
+        this.changePage(hash);
+        gameStarted = true;
+        startGame();
+        break;
+      case '#gameover':
+        gameStarted = false;
+        this.changePage(hash);
+        if (document.querySelector('#rankings li') == null) {
+          newScore.displayRanking();
+        } else {
+        }
+        break;
+      default:
+        this.changePage('#main');
+        break;
+    }
+    document.title = hash;
+  }
+  changePage(section) {
+    this.pages.forEach((page) => {
+      if (page.getAttribute('data-route') == section) {
+        page.classList.remove('invisible');
+      } else {
+        page.classList.add('invisible');
+      }
+    });
+  }
+}
+
+new Paging();

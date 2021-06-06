@@ -23,8 +23,8 @@
         <h1>SPACE<br />INVADERS</h1>
       </header>
       <main>
-        <section class="menu-panel">
-          <h2>MENU</h2>
+        <section class="menu-panel" data-route="#main">
+          <h2>CONTROLS</h2>
           <ul>
             <li>
               <svg class="controls" id="arrows" width="100" height="41" viewBox="0 0 140 41">
@@ -41,20 +41,37 @@
               SHOOT LASERS
             </li>
             <li>
-              <input class="sfx-switch" type="image" src="res/sfx-unmuted.png" />
-              TURN ON/OFF SOUND
-            </li>
-            <li>
-              <a href="" class="start-btn btn-animate" data-name="game">START GAME</a>
+              <a href="#gameplay" class="start-btn btn-animate">START GAME</a>
             </li>
           </ul>
         </section>
-        <section class="game-panel invisible">
-          <span>SCORE: <span id="score">0</span></span>
+        <section class="game-panel invisible" data-route="#gameplay">
+          <nav>
+            <div class="back-btn"><a id="#main" href="/">&lt; BACK</a></div>
+            <div class="scorebar">
+              SCORE:
+              <div id="score">0</div>
+            </div>
+            <input class="sfx-switch" type="image" src="res/sfx-unmuted.png" />
+          </nav>
           <canvas class="game"></canvas>
+          <div class="score-form"></div>
         </section>
-        <section class="gameover-panel invisible">
+        <section class="gameover-panel invisible" data-route="#gameover">
           <h2>GAME OVER</h2>
+          <div>
+            <a href="#gameplay" class="start-btn btn-animate">PLAY AGAIN</a>
+          </div>
+          <div id="highscore">
+            <h2>Highscores</h2>
+            <table id="rankings">
+              <tr>
+                <th>RANK</th>
+                <th>SCORE</th>
+                <th>PLAYER NAME</th>
+              </tr>
+            </table>
+          </div>
         </section>
         <canvas class="space"></canvas>
       </main>

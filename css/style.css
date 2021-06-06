@@ -53,15 +53,6 @@ section {
   margin: 0 auto;
 }
 
-.game-panel > span {
-  font-size: 16px;
-  font-family: 'Press Start 2P', cursive;
-  color: #db55dd;
-}
-span #score {
-  color: white;
-}
-
 .page main {
   display: flex;
   flex-grow: 1;
@@ -78,10 +69,6 @@ span #score {
   color: white;
   letter-spacing: 0.1rem;
   text-align: center;
-  color: white;
-}
-
-#container {
   color: white;
 }
 
@@ -102,16 +89,23 @@ main {
 
 .controls {
   fill: #42e9f4;
+  margin-right: 2rem;
 }
 
 .menu-panel > ul {
   list-style-type: none;
+  padding-inline-start: 0;
 }
 
 .menu-panel > ul li {
-  margin: 2rem;
+  padding-bottom: 2rem;
   display: flex;
   align-items: center;
+  justify-content: center;
+}
+
+.menu-panel ul > li:nth-of-type(2) {
+  padding-bottom: 6rem;
 }
 
 .start-btn {
@@ -126,7 +120,7 @@ main {
   padding: 15px 40px;
   display: inline-block;
   transition: all 0.2s;
-  position: absolute;
+  position: relative;
 }
 
 .start-btn:hover {
@@ -179,8 +173,41 @@ main {
 
 .menu-panel > h2 {
   color: #42e9f4;
-  font-size: 33px;
+  font-size: 28px;
   letter-spacing: 0.5rem;
+  margin: 4rem;
+}
+
+.game-panel nav {
+  font-size: 16px;
+  font-family: 'Press Start 2P', cursive;
+  color: #db55dd;
+  display: flex;
+  align-items: center;
+  justify-self: center;
+}
+
+.scorebar {
+  width: 350px;
+  margin-right: 4rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+nav #score {
+  color: white;
+}
+
+.back-btn,
+.game-panel .sfx-switch {
+  z-index: 3;
+}
+
+.back-btn > a {
+  text-decoration: none;
+  color: white;
 }
 
 .game-panel > .game {
@@ -189,13 +216,84 @@ main {
   left: 0;
   right: 0;
   top: 0;
-  z-index: 1;
+  z-index: 0;
   display: block;
   padding-left: 0;
   padding-right: 0;
   margin-left: auto;
   margin-right: auto;
   border: 1px solid #ebdf64;
+}
+
+.gameover-panel {
+  z-index: 3;
+  font-size: 17px;
+}
+
+.gameover-panel .btn-animate.start-btn {
+  margin: 3rem;
+}
+
+#rankings {
+  width: 100%;
+}
+
+#rankings tr {
+  line-height: 1.5rem;
+}
+
+.gameover-panel h2 {
+  overflow: hidden;
+  color: #42e9f4;
+  font-size: 28px;
+  letter-spacing: 0.5rem;
+  margin: 1rem;
+}
+
+#highscore h2 {
+  color: #ebdf64;
+}
+
+#highscore ul {
+  list-style: none;
+  padding: 0;
+}
+
+.submit-btn {
+  font-size: 12px;
+  text-decoration: none;
+  border: none;
+  padding: 4px 32px;
+  background-color: #db55dd;
+  color: white;
+  cursor: pointer;
+  font-family: 'Press Start 2P', cursive;
+}
+
+.score-form {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  transition: all 0.4s;
+  font-size: 12px;
+  margin-top: 10rem;
+  height: 10rem;
+  color: black;
+  font-weight: bold;
+}
+
+.score-form > small {
+  margin: 2rem;
+}
+
+.game-panel > .score-form.yellow {
+  background-color: rgba(235, 223, 100, 0.7);
 }
 
 @media screen and (max-width: 600px) {
