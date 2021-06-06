@@ -4,7 +4,6 @@ const STAR_NUM = 240;
 const PLAYER_SPEED = 8;
 const SPRITE_ANIMATION_INTERVAL = 10;
 const ENEMY_MOVE_INTERVAL = 30;
-const ENEMY_SPEED = 15;
 const GAME_PADDING = 6;
 
 // Game state
@@ -33,13 +32,11 @@ function resetGame() {
   enemyFrameInterval = 0;
   enemyMoveInterval = 0;
   score = 0;
-  player;
   projectilesFromPlayer = [];
   projectilesFromEnemies = [];
   enemies = [];
   ufos = [];
   ufoTimer = 0;
-  rightEdge;
 }
 
 // Space canvas background init
@@ -48,8 +45,8 @@ const spaceCtx = spaceCanvas.getContext('2d');
 const header = document.querySelector('header');
 
 // Set space size based on view heigh and window
-spaceCanvas.width = innerWidth;
-spaceCanvas.height = innerHeight - header.offsetHeight;
+spaceCanvas.width = window.innerWidth;
+spaceCanvas.height = window.innerHeight - header.offsetHeight;
 const SPACE_WIDTH = spaceCanvas.offsetWidth;
 const SPACE_HEIGHT = spaceCanvas.offsetHeight;
 
@@ -69,14 +66,8 @@ function setUp() {
   gameHeight = gameCanvas.offsetHeight;
 }
 
-// Page panels
-const elMenu = document.querySelector('.menu-panel');
-const elGame = document.querySelector('.game-panel');
-const elGameOver = document.querySelector('.gameover-panel');
-
-// Score and Start button
+// Score
 const scoreEl = document.querySelector('#score');
-const elemBtnNewGame = document.querySelector('.start-btn');
 
 // Player sprite init
 const playerImage = new Image();
@@ -178,7 +169,7 @@ class Alien extends GameObject {
     } else {
     }
     this.frameX = 2;
-    this.draw;
+    this.draw();
   }
 
   change(time) {
@@ -303,7 +294,7 @@ function placeStars() {
 }
 
 // Draw space with stars background
-function drawStar(star, dt, t) {
+function drawStar(star, dt) {
   if (star.y > SPACE_HEIGHT) {
     star.y = 0;
   } else {
@@ -646,8 +637,8 @@ addEventListener('load', () => {
 });
 
 addEventListener('resize', function () {
-  spaceCanvas.width = innerWidth - 35;
-  spaceCanvas.height = innerHeight - 480;
+  spaceCanvas.width = window.innerWidth - 35;
+  spaceCanvas.height = window.innerHeight - 480;
   gameCanvas.width = 600;
   gameCanvas.height = 775;
 });
