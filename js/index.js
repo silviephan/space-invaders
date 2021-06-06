@@ -615,7 +615,6 @@ function gameOver() {
 
     elemBtnSubmit.addEventListener('click', (e) => {
       checkName(inputEl);
-      console.log(validName);
       if (validName) {
         const name = document.querySelector('.scorer').value;
         newScore.addScore(score, name);
